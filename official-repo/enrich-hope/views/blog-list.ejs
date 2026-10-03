@@ -1,0 +1,42 @@
+<%- include('partials/header') %>
+
+<section class="blog-hero">
+  <div class="wrap">
+    <p class="eyebrow center">Stories &amp; Updates</p>
+    <h1 class="center">From the Field</h1>
+    <p class="center blog-hero-lede">Updates on our programs, the people we work with, and what your support makes possible.</p>
+  </div>
+</section>
+
+<section class="blog-list-section">
+  <div class="wrap">
+    <% if (posts.length === 0) { %>
+      <p class="center blog-empty">No posts yet — check back soon.</p>
+    <% } else { %>
+      <div class="blog-grid">
+        <% posts.forEach(post => { %>
+          <article class="blog-card">
+            <a href="/blog/<%= post.slug %>" class="blog-card-photo">
+              <% if (post.cover_image) { %>
+                <img src="<%= post.cover_image %>" alt="<%= post.title %>" loading="lazy">
+              <% } else { %>
+                <span class="blog-card-photo-fallback" aria-hidden="true">
+                  <svg viewBox="0 0 100 100" width="40" height="40"><use href="#hope-mark"></use></svg>
+                </span>
+              <% } %>
+            </a>
+            <div class="blog-card-body">
+              <p class="blog-card-date"><%= new Date(post.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) %></p>
+              <h2><a href="/blog/<%= post.slug %>"><%= post.title %></a></h2>
+              <% if (post.subtitle) { %><p class="blog-card-subtitle"><%= post.subtitle %></p><% } %>
+              <p class="blog-card-excerpt"><%= post.excerpt %></p>
+              <a href="/blog/<%= post.slug %>" class="blog-read-more">Read more →</a>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

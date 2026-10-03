@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Enrich Hope Foundation' %></title>
+<% if (typeof pageDescription !== 'undefined' && pageDescription) { %>
+<meta name="description" content="<%= pageDescription %>">
+<% } %>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/blog.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header" id="top">
+  <div class="wrap header-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" width="34" height="34"><use href="#hope-mark"></use></svg>
+      </span>
+      <span class="brand-word">Enrich Hope<em>Foundation</em></span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="/#about">About</a>
+      <a href="/#services">Programs</a>
+      <a href="/blog">Blog</a>
+      <a href="/#volunteer">Volunteer</a>
+    </nav>
+    <a class="btn btn-gold btn-nav" href="/#donate">Donate Now</a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- Shared brand mark, same defs as the main site, defined once per page -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="hope-mark">
+      <path fill="#1B4D3A" d="M50 12c-9 0-15 7-19 14-6-3-14-1-17 6-3 8 1 15 8 19 4 9 15 17 28 17V12Z" opacity=".95"/>
+      <path fill="#C9A227" d="M50 12c9 0 15 7 19 14 6-3 14-1 17 6 3 8-1 15-8 19-4 9-15 17-28 17V12Z" opacity=".95"/>
+      <path fill="#7FAE86" d="M50 18c-3-6-2-11 0-14 2 3 3 8 0 14Z"/>
+      <path fill="#1B4D3A" d="M42 55c3 3 5 3 8 0v10c-3 3-5 3-8 0V55Z"/>
+    </g>
+    <g id="hope-mark-light">
+      <path fill="#EFE3B8" d="M50 12c-9 0-15 7-19 14-6-3-14-1-17 6-3 8 1 15 8 19 4 9 15 17 28 17V12Z" opacity=".9"/>
+      <path fill="#C9A227" d="M50 12c9 0 15 7 19 14 6-3 14-1 17 6 3 8-1 15-8 19-4 9-15 17-28 17V12Z" opacity=".9"/>
+      <path fill="#EFE3B8" d="M50 18c-3-6-2-11 0-14 2 3 3 8 0 14Z" opacity=".8"/>
+    </g>
+  </defs>
+</svg>

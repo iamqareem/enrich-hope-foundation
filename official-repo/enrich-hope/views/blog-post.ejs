@@ -1,0 +1,38 @@
+<% if (!post) { %>
+  <%- include('partials/header') %>
+  <section class="blog-post-section">
+    <div class="wrap center">
+      <h1>Post not found</h1>
+      <p>This story may have been moved or unpublished.</p>
+      <a href="/blog" class="btn btn-outline">Back to Blog</a>
+    </div>
+  </section>
+  <%- include('partials/footer') %>
+<% } else { %>
+  <%- include('partials/header') %>
+
+  <article class="blog-post-section">
+    <div class="wrap blog-post-wrap">
+      <p class="eyebrow"><a href="/blog">← Back to Blog</a></p>
+      <h1><%= post.title %></h1>
+      <% if (post.subtitle) { %><p class="blog-post-subtitle"><%= post.subtitle %></p><% } %>
+      <p class="blog-post-date">
+        <%= new Date(post.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) %>
+      </p>
+
+      <% if (post.cover_image) { %>
+        <div class="blog-post-cover">
+          <img src="<%= post.cover_image %>" alt="<%= post.title %>">
+        </div>
+      <% } %>
+
+      <div class="blog-post-body">
+        <%- bodyHtml %>
+      </div>
+
+      <a href="/#donate" class="btn btn-gold btn-lg blog-post-cta">Support This Work — Donate</a>
+    </div>
+  </article>
+
+  <%- include('partials/footer') %>
+<% } %>

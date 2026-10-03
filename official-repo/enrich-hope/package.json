@@ -1,0 +1,29 @@
+{
+  "name": "enrich-hope-site",
+  "version": "1.0.0",
+  "description": "Enrich Hope Foundation website + blog (Express + SQLite, single admin)",
+  "private": true,
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:restart": "pm2 restart enrich-hope",
+    "pm2:stop": "pm2 stop enrich-hope",
+    "pm2:logs": "pm2 logs enrich-hope"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-session": "^2.1.0",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "marked": "^13.0.3",
+    "multer": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

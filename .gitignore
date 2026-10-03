@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Secrets — never commit real credentials
+.env
+.env.local
+official-repo/enrich-hope/.env
+
+# SQLite databases (posts + donations live here)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-journal
+data/
+
+# Uploaded blog covers (persist on disk, not in git)
+uploads/blog/*
+!uploads/blog/.gitkeep
+
+# Delivery archives — source of truth is the working tree, not zips
+*.zip
+claude-project/*.zip
+official-repo/*.zip
+
+# Junk / local tooling output
+official-repo/enrich-hope/littletree.txt
+.pm2/
+*.pm2.log
+
+# OS
+.DS_Store
+Thumbs.db

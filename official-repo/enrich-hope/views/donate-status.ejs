@@ -1,0 +1,44 @@
+<%- include('partials/header') %>
+
+<section class="donate-status-section">
+  <div class="wrap center donate-status-wrap">
+    <% if (state === 'not_configured') { %>
+      <p class="eyebrow center">Donate</p>
+      <h1>Online Donations Are Almost Ready</h1>
+      <p>We're finishing setup with our payments partner. Please check back shortly, or reach us directly to give another way.</p>
+      <a href="mailto:info@enrichhopefoundation.org" class="btn btn-outline">Email Us</a>
+
+    <% } else if (state === 'completed') { %>
+      <p class="eyebrow center">Thank You</p>
+      <h1>Your Gift Was Received</h1>
+      <p>Thank you for supporting Enrich Hope Foundation<% if (amount) { %> — your donation of UGX <%= Number(amount).toLocaleString() %> means a real difference for the families we work with.<% } else { %>. Your gift means a real difference for the families we work with.<% } %></p>
+      <a href="/" class="btn btn-gold">Back to Home</a>
+
+    <% } else if (state === 'pending') { %>
+      <p class="eyebrow center">Almost There</p>
+      <h1>Payment Pending</h1>
+      <p>We're still waiting for confirmation from our payments partner. If you completed a mobile money prompt, this can take a minute — no need to try again right away.</p>
+      <a href="/" class="btn btn-outline">Back to Home</a>
+
+    <% } else if (state === 'failed') { %>
+      <p class="eyebrow center">Payment Not Completed</p>
+      <h1>That Didn't Go Through</h1>
+      <p>Your payment wasn't completed, and you haven't been charged. You're welcome to try again.</p>
+      <a href="/#donate" class="btn btn-gold">Try Again</a>
+
+    <% } else if (state === 'invalid_amount') { %>
+      <p class="eyebrow center">Donate</p>
+      <h1>Please Choose an Amount</h1>
+      <p>Pick one of the suggested amounts, or enter your own, then try again.</p>
+      <a href="/#donate" class="btn btn-gold">Back to Donate</a>
+
+    <% } else { %>
+      <p class="eyebrow center">Donate</p>
+      <h1>Something Went Wrong</h1>
+      <p>We couldn't reach our payments partner just now. Please try again in a moment, or reach us directly.</p>
+      <a href="/#donate" class="btn btn-outline">Try Again</a>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

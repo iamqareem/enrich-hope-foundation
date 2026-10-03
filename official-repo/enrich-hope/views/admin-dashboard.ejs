@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= pageTitle %></title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/blog.css">
+</head>
+<body class="admin-body">
+
+<header class="admin-topbar">
+  <div class="wrap admin-topbar-inner">
+    <span class="brand-word">Enrich Hope<em>Admin</em></span>
+    <div class="admin-topbar-actions">
+      <a href="/blog" target="_blank" class="admin-link">View Blog ↗</a>
+      <form method="POST" action="/admin/logout" class="admin-inline-form">
+        <button type="submit" class="admin-link admin-link-btn">Log Out</button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<main class="wrap admin-main">
+  <div class="admin-main-head">
+    <h1>Posts</h1>
+    <a href="/admin/posts/new" class="btn btn-gold">+ New Post</a>
+  </div>
+
+  <% if (posts.length === 0) { %>
+    <p class="admin-empty">No posts yet. Click "New Post" to write your first one.</p>
+  <% } else { %>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Last Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% posts.forEach(post => { %>
+          <tr>
+            <td>
+              <strong><%= post.title %></strong>
+              <% if (post.status === 'published') { %>
+                <div class="admin-view-link"><a href="/blog/<%= post.slug %>" target="_blank">View ↗</a></div>
+              <% } %>
+            </td>
+            <td>
+              <span class="status-pill status-<%= post.status %>"><%= post.status %></span>
+            </td>
+            <td><%= new Date(post.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %></td>
+            <td class="admin-table-actions">
+              <a href="/admin/posts/<%= post.id %>/edit" class="admin-link">Edit</a>
+              <form method="POST" action="/admin/posts/<%= post.id %>/delete" class="admin-inline-form"
+                    onsubmit="return confirm('Delete this post? This cannot be undone.');">
+                <button type="submit" class="admin-link admin-link-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</main>
+
+</body>
+</html>
