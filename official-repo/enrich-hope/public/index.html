@@ -246,34 +246,37 @@
       <p class="eyebrow center">Stories of Impact</p>
       <h2 class="center">What People Say</h2>
 
-      <div class="testimonial-grid">
+      <!-- Hydrated from /api/testimonials (managed in /admin).
+           Static cards below are the fallback until the fetch resolves. -->
+      <div class="testimonial-grid" id="testimonial-grid">
         <figure class="testimonial-card">
           <img src="images/testimonial-1.jpg" alt="Photo of testimonial contributor 1" width="120" height="120" loading="lazy" class="testimonial-photo">
-          <blockquote>"The mentorship program gave my daughter a real path to finishing school. I've watched her confidence grow every term."</blockquote>
+          <blockquote>"Because of the support from Enrich Hope, my children can now dream of a future where they finish school and help others."</blockquote>
           <figcaption>
-            <span class="testimonial-name">Name Surname</span>
-            <span class="testimonial-role">Parent, Education Program</span>
+            <span class="testimonial-name">Sarah N.</span>
+            <span class="testimonial-role">Beneficiary, Education Program</span>
           </figcaption>
         </figure>
 
         <figure class="testimonial-card">
           <img src="images/testimonial-2.jpg" alt="Photo of testimonial contributor 2" width="120" height="120" loading="lazy" class="testimonial-photo">
-          <blockquote>"Volunteering here connected me with a community that genuinely cares. It's some of the most meaningful work I've done."</blockquote>
+          <blockquote>"This foundation doesn't just give handouts; they give us the tools to build our own community's success."</blockquote>
           <figcaption>
-            <span class="testimonial-name">Name Surname</span>
-            <span class="testimonial-role">Volunteer</span>
-          </figcaption>
-        </figure>
-
-        <figure class="testimonial-card">
-          <img src="images/testimonial-3.jpg" alt="Photo of testimonial contributor 3" width="120" height="120" loading="lazy" class="testimonial-photo">
-          <blockquote>"The health outreach team reached our village when no one else did. That kind of support changes lives."</blockquote>
-          <figcaption>
-            <span class="testimonial-name">Name Surname</span>
-            <span class="testimonial-role">Community Member</span>
+            <span class="testimonial-name">Robert K.</span>
+            <span class="testimonial-role">Village Leader</span>
           </figcaption>
         </figure>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ GALLERY ============ -->
+  <section class="gallery-section" id="gallery">
+    <div class="wrap">
+      <p class="eyebrow center">Moments of Hope</p>
+      <h2 class="center">From the Field</h2>
+      <!-- Hydrated from /api/gallery (managed in /admin). Hidden if empty. -->
+      <div class="gallery-grid" id="gallery-grid"></div>
     </div>
   </section>
 
@@ -342,7 +345,7 @@
         <a class="btn btn-gold btn-lg" href="mailto:volunteer@enrichhopefoundation.org?subject=I'd%20like%20to%20volunteer">
           Email Us to Volunteer
         </a>
-        <a class="btn btn-outline" href="tel:+256701707471">Call +256 701 707 471</a>
+        <a class="btn btn-outline" id="volunteer-phone" href="tel:+256701707471">Call +256 701 707 471</a>
       </div>
     </div>
   </section>
@@ -376,9 +379,9 @@
 
     <div class="footer-col">
       <h4>Contact</h4>
-      <a href="mailto:info@enrichhopefoundation.org">info@enrichhopefoundation.org</a>
-      <a href="tel:+256701707471">+256 701 707 471</a>
-      <p>Kampala, Uganda</p>
+      <a href="mailto:info@enrichhopefoundation.org" id="contact-email">info@enrichhopefoundation.org</a>
+      <a href="tel:+256701707471" id="contact-phone">+256 701 707 471</a>
+      <p id="contact-location">Kampala, Uganda</p>
     </div>
 
     <div class="footer-col">

@@ -45,6 +45,93 @@ fetch('/api/social-links')
   })
   .catch(() => { /* footer keeps its default links */ });
 
+// Testimonials: hydrated from /api/testimonials (managed in /admin).
+// Falls back to the static cards already in the HTML when empty/offline.
+fetch('/api/testimonials')
+  .then((r) => (r.ok ? r.json() : []))
+  .then((items) => {
+    const grid = document.getElementById('testimonial-grid');
+    if (!grid || !Array.isArray(items) || items.length === 0) return;
+    grid.innerHTML = items.map((t) => `
+      <figure class="testimonial-card">
+        ${t.photo_url ? `<img src="${t.photo_url}" alt="Photo of ${t.name}" width="120" height="120" loading="lazy" class="testimonial-photo">` : ''}
+        <blockquote></blockquote>
+        <figcaption>
+          <span class="testimonial-name"></span>
+          ${t.role ? '<span class="testimonial-role"></span>' : ''}
+        </figcaption>
+      </figure>`).join('');
+    // Text set via textContent (not innerHTML) so quotes can't inject markup.
+    grid.querySelectorAll('.testimonial-card').forEach((card, i) => {
+      card.querySelector('blockquote').textContent = `"${items[i].quote}"`;
+      card.querySelector('.testimonial-name').textContent = items[i].name;
+      const roleEl = card.querySelector('.testimonial-role');
+      if (roleEl) roleEl.textContent = items[i].role;
+    });
+  })
+  .catch(() => { /* static fallback cards stay */ });
+
+// Gallery: hydrated from /api/gallery (managed in /admin).
+// Section hides entirely when no photos exist yet.
+fetch('/api/gallery')
+  .then((r) => (r.ok ? r.json() : []))
+  .then((items) => {
+    const grid = document.getElementById('gallery-grid');
+    if (!grid) return;
+    if (!Array.isArray(items) || items.length === 0) {
+      const section = document.getElementById('gallery');
+      if (section) section.style.display = 'none';
+      return;
+    }
+    grid.innerHTML = '';
+    items.slice(0, 8).forEach((g) => {
+      const fig = document.createElement('figure');
+      fig.className = 'gallery-item';
+      const img = document.createElement('img');
+      img.src = g.image_url;
+      img.alt = g.title || 'Enrich Hope Foundation photo';
+      img.loading = 'lazy';
+      fig.appendChild(img);
+      if (g.title) {
+        const cap = document.createElement('figcaption');
+        cap.className = 'gallery-caption';
+        cap.textContent = g.title;
+        fig.appendChild(cap);
+      }
+      grid.appendChild(fig);
+    });
+  })
+  .catch(() => {
+    const section = document.getElementById('gallery');
+    if (section) section.style.display = 'none';
+  });
+
+// Contact details: hydrated from /api/site-settings (managed in /admin).
+fetch('/api/site-settings')
+  .then((r) => (r.ok ? r.json() : null))
+  .then((settings) => {
+    if (!settings || !settings.contact) return;
+    const { email, phone, location } = settings.contact;
+    const emailEl = document.getElementById('contact-email');
+    if (emailEl && email) {
+      emailEl.href = `mailto:${email}`;
+      emailEl.textContent = email;
+    }
+    const phoneEl = document.getElementById('contact-phone');
+    if (phoneEl && phone) {
+      phoneEl.href = `tel:${phone.replace(/\s+/g, '')}`;
+      phoneEl.textContent = phone;
+    }
+    const locEl = document.getElementById('contact-location');
+    if (locEl && location) locEl.textContent = location;
+    const volPhone = document.getElementById('volunteer-phone');
+    if (volPhone && phone) {
+      volPhone.href = `tel:${phone.replace(/\s+/g, '')}`;
+      volPhone.textContent = `Call ${phone}`;
+    }
+  })
+  .catch(() => { /* static contact details stay */ });
+
 // Floating donate button: hide while the hero or donate section is already in view
 const floatDonate = document.querySelector('.float-donate');
 const hideZones = document.querySelectorAll('.hero, #donate');

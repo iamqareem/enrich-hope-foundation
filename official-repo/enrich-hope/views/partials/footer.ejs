@@ -18,9 +18,10 @@
     </div>
     <div class="footer-col">
       <h4>Contact</h4>
-      <a href="mailto:info@enrichhopefoundation.org">info@enrichhopefoundation.org</a>
-      <a href="tel:+256701707471">+256 701 707 471</a>
-      <p>Kampala, Uganda</p>
+      <% const c = typeof contact !== 'undefined' && contact ? contact : {}; %>
+      <a href="mailto:<%= c.email || 'info@enrichhopefoundation.org' %>"><%= c.email || 'info@enrichhopefoundation.org' %></a>
+      <a href="tel:<%= (c.phone || '+256701707471').replace(/\s+/g, '') %>"><%= c.phone || '+256 701 707 471' %></a>
+      <p><%= c.location || 'Kampala, Uganda' %></p>
     </div>
     <% const links = typeof socialLinks !== 'undefined' ? socialLinks : {}; %>
     <% if (links.facebook || links.instagram || links.x || links.youtube) { %>

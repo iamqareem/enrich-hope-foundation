@@ -35,6 +35,25 @@ db.exec(`
     key   TEXT PRIMARY KEY,
     value TEXT
   );
+
+  -- Homepage testimonials, managed in /admin ("Voices of Impact").
+  CREATE TABLE IF NOT EXISTS testimonials (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    quote      TEXT NOT NULL,
+    name       TEXT NOT NULL,
+    role       TEXT,
+    photo_url  TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Homepage photo gallery, managed in /admin (upload or image URL).
+  CREATE TABLE IF NOT EXISTS gallery (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    title      TEXT NOT NULL,
+    image_url  TEXT NOT NULL,
+    category   TEXT DEFAULT 'general',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 function slugify(title) {
@@ -83,6 +102,20 @@ const queries = {
     WHERE id = @id
   `),
   delete: db.prepare('DELETE FROM posts WHERE id = ?'),
+
+  // Testimonials
+  listTestimonials: db.prepare('SELECT * FROM testimonials ORDER BY id ASC'),
+  insertTestimonial: db.prepare(
+    'INSERT INTO testimonials (quote, name, role, photo_url) VALUES (@quote, @name, @role, @photo_url)'
+  ),
+  deleteTestimonial: db.prepare('DELETE FROM testimonials WHERE id = ?'),
+
+  // Gallery
+  listGallery: db.prepare('SELECT * FROM gallery ORDER BY id DESC'),
+  insertGallery: db.prepare(
+    'INSERT INTO gallery (title, image_url, category) VALUES (@title, @image_url, @category)'
+  ),
+  deleteGallery: db.prepare('DELETE FROM gallery WHERE id = ?'),
 };
 
 const settingsQueries = {
@@ -110,16 +143,85 @@ function sanitizeSocialUrl(raw) {
   return `https://${url}`;
 }
 
+// ---- Site settings: contact details (editable in /admin) ----
+const CONTACT_DEFAULTS = {
+  email: 'info@enrichhopefoundation.org',
+  phone: '+256 701 707 471',
+  location: 'Kampala, Uganda',
+};
+
+const CONTACT_KEYS = {
+  email: 'contact_email',
+  phone: 'contact_phone',
+  location: 'contact_location',
+};
+
+function getContactDetails() {
+  return {
+    email: settingsQueries.get.get(CONTACT_KEYS.email)?.value ?? CONTACT_DEFAULTS.email,
+    phone: settingsQueries.get.get(CONTACT_KEYS.phone)?.value ?? CONTACT_DEFAULTS.phone,
+    location: settingsQueries.get.get(CONTACT_KEYS.location)?.value ?? CONTACT_DEFAULTS.location,
+  };
+}
+
+function setContactDetails({ email, phone, location }) {
+  const clean = {
+    email: String(email ?? '').trim().slice(0, 120) || CONTACT_DEFAULTS.email,
+    phone: String(phone ?? '').trim().slice(0, 40) || CONTACT_DEFAULTS.phone,
+    location: String(location ?? '').trim().slice(0, 120) || CONTACT_DEFAULTS.location,
+  };
+  settingsQueries.set.run({ key: CONTACT_KEYS.email, value: clean.email });
+  settingsQueries.set.run({ key: CONTACT_KEYS.phone, value: clean.phone });
+  settingsQueries.set.run({ key: CONTACT_KEYS.location, value: clean.location });
+  return clean;
+}
+
+// Seed defaults so the homepage has real content on first boot.
+// The admin can edit or delete any of these from /admin afterwards.
+const countTestimonials = db.prepare('SELECT COUNT(*) AS count FROM testimonials').get();
+if (countTestimonials.count === 0) {
+  const seed = db.prepare(
+    'INSERT INTO testimonials (quote, name, role, photo_url) VALUES (@quote, @name, @role, @photo_url)'
+  );
+  seed.run({
+    quote: 'Because of the support from Enrich Hope, my children can now dream of a future where they finish school and help others.',
+    name: 'Sarah N.',
+    role: 'Beneficiary, Education Program',
+    photo_url: '/images/testimonial-1.jpg',
+  });
+  seed.run({
+    quote: "This foundation doesn't just give handouts; they give us the tools to build our own community's success.",
+    name: 'Robert K.',
+    role: 'Village Leader',
+    photo_url: '/images/testimonial-2.jpg',
+  });
+}
+
+const countGallery = db.prepare('SELECT COUNT(*) AS count FROM gallery').get();
+if (countGallery.count === 0) {
+  const seed = db.prepare(
+    'INSERT INTO gallery (title, image_url, category) VALUES (@title, @image_url, @category)'
+  );
+  [
+    { title: 'Learning Together', image_url: '/images/service-education.jpg', category: 'Education' },
+    { title: 'Health Outreach', image_url: '/images/service-health.jpg', category: 'Health' },
+    { title: 'Stronger Communities', image_url: '/images/service-community.jpg', category: 'Community' },
+    { title: 'Clean Water for All', image_url: '/images/service-borehole.jpg', category: 'Water' },
+  ].forEach((img) => seed.run(img));
+}
+
 module.exports = {
   db,
-  uniqueSlug,
-  listPublished: () => queries.listPublished.all(),
+  uniqueSlug,  listPublished: () => queries.listPublished.all(),
   listAll: () => queries.listAll.all(),
   getBySlug: (slug) => queries.getBySlug.get(slug),
   getById: (id) => queries.getById.get(id),
 
   getSetting: (key) => settingsQueries.get.get(key)?.value ?? null,
   setSetting: (key, value) => settingsQueries.set.run({ key, value }),
+
+  getContactDetails,
+  setContactDetails,
 
   getSocialLinks: () => ({
     facebook: settingsQueries.get.get(SOCIAL_KEYS.facebook)?.value ?? '',
@@ -172,4 +274,25 @@ module.exports = {
   deletePost(id) {
     return queries.delete.run(id);
   },
+
+  // Testimonials (homepage "Voices of Impact")
+  listTestimonials: () => queries.listTestimonials.all(),
+  addTestimonial: ({ quote, name, role, photo_url }) =>
+    queries.insertTestimonial.run({
+      quote,
+      name,
+      role: role || '',
+      photo_url: photo_url || null,
+    }),
+  deleteTestimonial: (id) => queries.deleteTestimonial.run(id),
+
+  // Gallery (homepage photo grid)
+  listGallery: () => queries.listGallery.all(),
+  addGalleryItem: ({ title, image_url, category }) =>
+    queries.insertGallery.run({
+      title: title || 'Enrich Hope Photo',
+      image_url,
+      category: category || 'general',
+    }),
+  deleteGalleryItem: (id) => queries.deleteGallery.run(id),
 };

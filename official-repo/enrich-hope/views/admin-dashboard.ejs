@@ -17,6 +17,7 @@
   <div class="wrap admin-topbar-inner">
     <span class="brand-word">Enrich Hope<em>Admin</em></span>
     <div class="admin-topbar-actions">
+      <a href="/" target="_blank" class="admin-link">View Site ↗</a>
       <a href="/blog" target="_blank" class="admin-link">View Blog ↗</a>
       <form method="POST" action="/admin/logout" class="admin-inline-form">
         <button type="submit" class="admin-link admin-link-btn">Log Out</button>
@@ -26,16 +27,38 @@
 </header>
 
 <main class="wrap admin-main">
-  <section class="admin-card">
-    <h2>Follow Us — Social Links</h2>
-    <p class="admin-hint">These appear in the site footer. Leave a field empty to hide that icon.</p>
+  <% if (typeof settingsSaved !== 'undefined' && settingsSaved) { %>
+    <p class="admin-success">Settings saved.</p>
+  <% } %>
+  <% if (typeof settingsError !== 'undefined' && settingsError) { %>
+    <p class="admin-error"><%= settingsError %></p>
+  <% } %>
 
-    <% if (typeof settingsSaved !== 'undefined' && settingsSaved) { %>
-      <p class="admin-success">Social links saved.</p>
-    <% } %>
-    <% if (typeof settingsError !== 'undefined' && settingsError) { %>
-      <p class="admin-error"><%= settingsError %></p>
-    <% } %>
+  <!-- SECTION 1: SITE SETTINGS (contact + social links for the footer) -->
+  <section class="admin-card">
+    <h2>Site Settings — Contact &amp; Social Links</h2>
+    <p class="admin-hint">These appear in the site footer. Leave a social field empty to hide that icon.</p>
+
+    <form method="POST" action="/admin/settings/contact" class="admin-form admin-social-form">
+      <label for="contact_email">Contact Email</label>
+      <input type="email" id="contact_email" name="email" autocomplete="email"
+             value="<%= contact ? contact.email : '' %>">
+
+      <label for="contact_phone">Contact Phone</label>
+      <input type="text" id="contact_phone" name="phone" autocomplete="tel"
+             placeholder="+256 ..." value="<%= contact ? contact.phone : '' %>">
+
+      <label for="contact_location">Location</label>
+      <input type="text" id="contact_location" name="location"
+             placeholder="Kampala, Uganda" value="<%= contact ? contact.location : '' %>">
+
+      <div class="admin-form-actions">
+        <span></span>
+        <button type="submit" class="btn btn-gold">Save Contact Details</button>
+      </div>
+    </form>
+
+    <hr class="admin-divider">
 
     <form method="POST" action="/admin/settings/social" class="admin-form admin-social-form">
       <label for="social_facebook">Facebook</label>
@@ -65,48 +88,182 @@
     </form>
   </section>
 
-  <div class="admin-main-head admin-posts-head">
-    <h1>Posts</h1>
-    <a href="/admin/posts/new" class="btn btn-gold">+ New Post</a>
-  </div>
+  <!-- SECTION 2: BLOG POSTS -->
+  <section class="admin-card">
+    <div class="admin-main-head">
+      <div>
+        <h2>Blog Articles &amp; News</h2>
+        <p class="admin-hint">Write and manage stories from the foundation.</p>
+      </div>
+      <a href="/admin/posts/new" class="btn btn-gold">+ New Post</a>
+    </div>
 
-  <% if (posts.length === 0) { %>
-    <p class="admin-empty">No posts yet. Click "New Post" to write your first one.</p>
-  <% } else { %>
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Status</th>
-          <th>Last Updated</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <% posts.forEach(post => { %>
+    <% if (!posts || posts.length === 0) { %>
+      <p class="admin-empty">No posts yet. Click "+ New Post" to write your first one.</p>
+    <% } else { %>
+      <table class="admin-table">
+        <thead>
           <tr>
-            <td>
-              <strong><%= post.title %></strong>
-              <% if (post.status === 'published') { %>
-                <div class="admin-view-link"><a href="/blog/<%= post.slug %>" target="_blank">View ↗</a></div>
-              <% } %>
-            </td>
-            <td>
-              <span class="status-pill status-<%= post.status %>"><%= post.status %></span>
-            </td>
-            <td><%= new Date(post.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %></td>
-            <td class="admin-table-actions">
-              <a href="/admin/posts/<%= post.id %>/edit" class="admin-link">Edit</a>
-              <form method="POST" action="/admin/posts/<%= post.id %>/delete" class="admin-inline-form"
-                    onsubmit="return confirm('Delete this post? This cannot be undone.');">
-                <button type="submit" class="admin-link admin-link-danger">Delete</button>
-              </form>
-            </td>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Last Updated</th>
+            <th></th>
           </tr>
+        </thead>
+        <tbody>
+          <% posts.forEach(post => { %>
+            <tr>
+              <td>
+                <strong><%= post.title %></strong>
+                <% if (post.status === 'published') { %>
+                  <div class="admin-view-link"><a href="/blog/<%= post.slug %>" target="_blank">View ↗</a></div>
+                <% } %>
+              </td>
+              <td>
+                <span class="status-pill status-<%= post.status %>"><%= post.status %></span>
+              </td>
+              <td><%= new Date(post.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %></td>
+              <td class="admin-table-actions">
+                <a href="/admin/posts/<%= post.id %>/edit" class="admin-link">Edit</a>
+                <form method="POST" action="/admin/posts/<%= post.id %>/delete" class="admin-inline-form"
+                      onsubmit="return confirm('Delete this post? This cannot be undone.');">
+                  <button type="submit" class="admin-link admin-link-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </section>
+
+  <!-- SECTION 3: TESTIMONIALS ("Voices of Impact" on the homepage) -->
+  <section class="admin-card" id="testimonials-section">
+    <div class="admin-main-head">
+      <div>
+        <h2>Testimonials Hatch</h2>
+        <p class="admin-hint">Quotes shown in "Voices of Impact" on the homepage. Newest additions appear last.</p>
+      </div>
+    </div>
+
+    <form method="POST" action="/admin/testimonials" enctype="multipart/form-data" class="admin-form admin-inline-add">
+      <div class="admin-inline-field admin-inline-wide">
+        <label for="t-quote">Quote</label>
+        <textarea id="t-quote" name="quote" rows="3" required maxlength="1000"
+                  placeholder="What did they say about the foundation's work?"></textarea>
+      </div>
+      <div class="admin-inline-field">
+        <label for="t-name">Name</label>
+        <input type="text" id="t-name" name="name" required maxlength="120" placeholder="e.g. Sarah N.">
+      </div>
+      <div class="admin-inline-field">
+        <label for="t-role">Role</label>
+        <input type="text" id="t-role" name="role" maxlength="120" placeholder="e.g. Beneficiary">
+      </div>
+      <div class="admin-inline-field">
+        <label for="t-photo">Photo Upload</label>
+        <input type="file" id="t-photo" name="photo" accept="image/jpeg,image/png,image/webp">
+      </div>
+      <div class="admin-inline-field">
+        <label for="t-photo-url">OR Photo URL</label>
+        <input type="text" id="t-photo-url" name="photo_url" placeholder="https://...">
+      </div>
+      <div>
+        <button type="submit" class="btn btn-gold">+ Add Testimonial</button>
+      </div>
+    </form>
+
+    <% if (testimonials && testimonials.length > 0) { %>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Quote</th>
+            <th>Name</th>
+            <th>Role</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% testimonials.forEach(t => { %>
+            <tr>
+              <td><%= t.quote.length > 90 ? t.quote.slice(0, 90) + '…' : t.quote %></td>
+              <td><strong><%= t.name %></strong></td>
+              <td><%= t.role || '—' %></td>
+              <td>
+                <form method="POST" action="/admin/testimonials/<%= t.id %>/delete" class="admin-inline-form"
+                      onsubmit="return confirm('Remove this testimonial?');">
+                  <button type="submit" class="admin-link admin-link-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p class="admin-empty">No testimonials yet — the homepage falls back to its default cards.</p>
+    <% } %>
+  </section>
+
+  <!-- SECTION 4: PHOTO GALLERY (homepage photo grid) -->
+  <section class="admin-card" id="gallery-section">
+    <div class="admin-main-head">
+      <div>
+        <h2>Photo Gallery Hatch</h2>
+        <p class="admin-hint">Upload photos or paste image URLs to populate the homepage gallery grid.</p>
+      </div>
+    </div>
+
+    <form method="POST" action="/admin/gallery" enctype="multipart/form-data" class="admin-form admin-inline-add">
+      <div class="admin-inline-field">
+        <label for="gal-title">Photo Title</label>
+        <input type="text" id="gal-title" name="title" maxlength="120" placeholder="e.g. Classroom Session">
+      </div>
+      <div class="admin-inline-field admin-inline-narrow">
+        <label for="gal-cat">Category</label>
+        <select id="gal-cat" name="category">
+          <option value="Education">Education</option>
+          <option value="Health">Health</option>
+          <option value="Community">Community</option>
+          <option value="Water">Water</option>
+          <option value="Events">Events</option>
+          <option value="General">General</option>
+        </select>
+      </div>
+      <div class="admin-inline-field">
+        <label for="gal-file">Upload Image File</label>
+        <input type="file" id="gal-file" name="gallery_image" accept="image/jpeg,image/png,image/webp">
+      </div>
+      <div class="admin-inline-field">
+        <label for="gal-url">OR Paste Image URL</label>
+        <input type="text" id="gal-url" name="image_url" placeholder="https://...">
+      </div>
+      <div>
+        <button type="submit" class="btn btn-gold">+ Add Photo</button>
+      </div>
+    </form>
+
+    <div class="admin-grid-cards">
+      <% if (gallery && gallery.length > 0) { %>
+        <% gallery.forEach(item => { %>
+          <div class="admin-media-card">
+            <img src="<%= item.image_url %>" alt="<%= item.title %>" loading="lazy">
+            <div class="admin-media-info">
+              <div>
+                <h4><%= item.title %></h4>
+                <p><span class="badge"><%= item.category %></span></p>
+              </div>
+              <form method="POST" action="/admin/gallery/<%= item.id %>/delete" style="margin-top: 8px;"
+                    onsubmit="return confirm('Remove photo from gallery?');">
+                <button type="submit" class="admin-link admin-link-danger admin-btn-plain">Delete Photo</button>
+              </form>
+            </div>
+          </div>
         <% }) %>
-      </tbody>
-    </table>
-  <% } %>
+      <% } else { %>
+        <p class="admin-empty">No gallery photos yet.</p>
+      <% } %>
+    </div>
+  </section>
 </main>
 
 </body>

@@ -46,43 +46,109 @@ app.use(
   })
 );
 
-// ---- Image upload setup (blog cover images) ----
-const UPLOAD_DIR = path.join(__dirname, 'uploads', 'blog');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const safeExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext) ? ext : '.jpg';
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e6)}${safeExt}`);
-  },
-});
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (req, file, cb) => {
-    const ok = /^image\/(jpeg|png|webp)$/.test(file.mimetype);
-    cb(ok ? null : new Error('Only JPG, PNG, or WEBP images are allowed'), ok);
-  },
+// Minimal security headers (no extra dependency). Tighten further behind
+// HTTPS via the nginx/TLS steps in DEPLOY.md.
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  next();
 });
 
-// ---- Site settings (footer social links) ----
-// Available in every EJS view as `socialLinks`, so the footer partial can
-// render them with zero changes to each individual route.
+// ---- Image upload setup (blog covers, testimonials, gallery) ----
+function makeUploader(subdir, prefix) {
+  const dir = path.join(__dirname, 'uploads', subdir);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return multer({
+    storage: multer.diskStorage({
+      destination: (req, file, cb) => cb(null, dir),
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const safeExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext) ? ext : '.jpg';
+        cb(null, `${prefix}${Date.now()}-${Math.round(Math.random() * 1e6)}${safeExt}`);
+      },
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+      const ok = /^image\/(jpeg|png|webp)$/.test(file.mimetype);
+      cb(ok ? null : new Error('Only JPG, PNG, or WEBP images are allowed'), ok);
+    },
+  });
+}
+
+const upload = makeUploader('blog', '');
+const uploadTestimonial = makeUploader('testimonials', 't-');
+const uploadGallery = makeUploader('gallery', 'g-');
+
+// Delete an uploaded file when its record is removed/replaced.
+// Only touches files under /uploads — never static site images.
+function removeUploadedFile(publicUrl) {
+  if (!publicUrl || !publicUrl.startsWith('/uploads/')) return;
+  const abs = path.join(__dirname, publicUrl);
+  fs.unlink(abs, () => {});
+}
+
+// Wrap multer so a bad upload re-renders the admin form with a message
+// instead of crashing to a bare 500 page.
+function handleUpload(mw, getView) {
+  return (req, res, next) => {
+    mw(req, res, (err) => {
+      if (!err) return next();
+      const message =
+        err.code === 'LIMIT_FILE_SIZE'
+          ? 'Image is too large — please use a file under 5MB.'
+          : err.message || 'Image upload failed. Please try a JPG, PNG, or WEBP file.';
+      return res.status(400).render(getView(req), {
+        post: { ...req.body, id: req.params.id },
+        error: message,
+        pageTitle: 'Edit Post | Admin',
+      });
+    });
+  };
+}
+
+// Same idea for the section-style hatches (testimonials, gallery):
+// a bad upload just bounces back to the section (kwaja pattern).
+function uploadOrBounce(mw, anchor) {
+  return (req, res, next) => {
+    mw(req, res, (err) => {
+      if (!err) return next();
+      console.error(`Upload failed (${anchor}):`, err.message);
+      return res.redirect(`/admin${anchor}`);
+    });
+  };
+}
+
+// ---- Site settings (footer social links + contact details) ----
+// Available in every EJS view as `socialLinks` / `contact`, so the footer
+// partial can render them with zero changes to each individual route.
 app.use((req, res, next) => {
   try {
     res.locals.socialLinks = posts.getSocialLinks();
+    res.locals.contact = posts.getContactDetails();
   } catch (err) {
     res.locals.socialLinks = { facebook: '', instagram: '', x: '', youtube: '' };
+    res.locals.contact = { email: '', phone: '', location: '' };
   }
   next();
 });
 
-// Public JSON feed for the static homepage (public/index.html can't use
-// EJS, so a tiny script hydrates its footer icons from here).
+// Public JSON feeds for the static homepage (public/index.html can't use
+// EJS, so a tiny script hydrates dynamic blocks from here).
 app.get('/api/social-links', (req, res) => {
   res.json(res.locals.socialLinks);
+});
+
+app.get('/api/site-settings', (req, res) => {
+  res.json({ social: res.locals.socialLinks, contact: res.locals.contact });
+});
+
+app.get('/api/testimonials', (req, res) => {
+  res.json(posts.listTestimonials());
+});
+
+app.get('/api/gallery', (req, res) => {
+  res.json(posts.listGallery());
 });
 
 // =========================================================
@@ -137,8 +203,10 @@ app.post('/donate/start', async (req, res) => {
   }
 
   const amountRaw = req.body.amount === 'custom' ? req.body.custom_amount : req.body.amount;
-  const amount = Number(amountRaw);
-  if (!amount || amount <= 0) {
+  const amount = Math.round(Number(amountRaw));
+  const MIN_UGX = 1000;
+  const MAX_UGX = 100000000;
+  if (!Number.isFinite(amount) || amount < MIN_UGX || amount > MAX_UGX) {
     return res.status(400).render('donate-status', {
       state: 'invalid_amount',
       pageTitle: 'Donate | Enrich Hope Foundation',
@@ -239,7 +307,30 @@ app.get('/admin/login', (req, res) => {
   res.render('admin-login', { error: null, pageTitle: 'Admin Login | Enrich Hope Foundation' });
 });
 
-app.post('/admin/login', (req, res) => {
+// Brute-force guard for the single admin login: max 10 attempts per
+// IP per 15 minutes. In-memory is fine — one process, one admin.
+const loginAttempts = new Map();
+function loginRateLimit(req, res, next) {
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  const entry = loginAttempts.get(ip) || { count: 0, resetAt: now + windowMs };
+  if (now > entry.resetAt) {
+    entry.count = 0;
+    entry.resetAt = now + windowMs;
+  }
+  entry.count += 1;
+  loginAttempts.set(ip, entry);
+  if (entry.count > 10) {
+    return res.status(429).render('admin-login', {
+      error: 'Too many attempts. Please wait 15 minutes and try again.',
+      pageTitle: 'Admin Login | Enrich Hope Foundation',
+    });
+  }
+  next();
+}
+
+app.post('/admin/login', loginRateLimit, (req, res) => {
   const { username, password } = req.body;
   if (checkCredentials(username, password)) {
     req.session.isAdmin = true;
@@ -256,48 +347,116 @@ app.post('/admin/logout', (req, res) => {
   res.redirect('/admin/login');
 });
 
-app.get('/admin', requireAuth, (req, res) => {
-  res.render('admin-dashboard', {
+function renderDashboard(res, overrides = {}, status = 200) {
+  return res.status(status).render('admin-dashboard', {
     posts: posts.listAll(),
+    testimonials: posts.listTestimonials(),
+    gallery: posts.listGallery(),
     socialLinks: posts.getSocialLinks(),
-    settingsSaved: req.query.saved === '1',
+    contact: posts.getContactDetails(),
+    settingsSaved: false,
     settingsError: null,
     pageTitle: 'Dashboard | Admin',
+    ...overrides,
   });
+}
+
+app.get('/admin', requireAuth, (req, res) => {
+  renderDashboard(res, { settingsSaved: req.query.saved === '1' });
 });
 
-app.post('/admin/settings/social', requireAuth, (req, res) => {
+function saveSettings(res, saver, successPayload) {
   try {
-    const saved = posts.setSocialLinks({
+    const saved = saver();
+    renderDashboard(res, { ...successPayload(saved), settingsSaved: true });
+  } catch (err) {
+    console.error(err);
+    renderDashboard(
+      res,
+      { settingsSaved: false, settingsError: 'Could not save. Please try again.' },
+      500
+    );
+  }
+}
+
+app.post('/admin/settings/social', requireAuth, (req, res) => {
+  saveSettings(
+    res,
+    () => posts.setSocialLinks({
       facebook: req.body.facebook,
       instagram: req.body.instagram,
       x: req.body.x,
       youtube: req.body.youtube,
-    });
-    res.render('admin-dashboard', {
-      posts: posts.listAll(),
-      socialLinks: saved,
-      settingsSaved: true,
-      settingsError: null,
-      pageTitle: 'Dashboard | Admin',
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).render('admin-dashboard', {
-      posts: posts.listAll(),
-      socialLinks: posts.getSocialLinks(),
-      settingsSaved: false,
-      settingsError: 'Could not save social links. Please try again.',
-      pageTitle: 'Dashboard | Admin',
-    });
+    }),
+    (saved) => ({ socialLinks: saved })
+  );
+});
+
+app.post('/admin/settings/contact', requireAuth, (req, res) => {
+  saveSettings(
+    res,
+    () => posts.setContactDetails({
+      email: req.body.email,
+      phone: req.body.phone,
+      location: req.body.location,
+    }),
+    (saved) => ({ contact: saved })
+  );
+});
+
+// ---- Testimonials management ("Voices of Impact" on the homepage) ----
+app.post('/admin/testimonials', requireAuth, uploadOrBounce(uploadTestimonial.single('photo'), '#testimonials-section'), (req, res) => {
+  const quote = (req.body.quote || '').trim().slice(0, 1000);
+  const name = (req.body.name || '').trim().slice(0, 120);
+  if (!quote || !name) return res.redirect('/admin#testimonials-section');
+  let photoUrl = (req.body.photo_url || '').trim().slice(0, 300) || null;
+  if (req.file) photoUrl = `/uploads/testimonials/${req.file.filename}`;
+  posts.addTestimonial({
+    quote,
+    name,
+    role: (req.body.role || '').trim().slice(0, 120),
+    photo_url: photoUrl,
+  });
+  res.redirect('/admin#testimonials-section');
+});
+
+app.post('/admin/testimonials/:id/delete', requireAuth, (req, res) => {
+  const item = posts.listTestimonials().find((t) => String(t.id) === String(req.params.id));
+  posts.deleteTestimonial(req.params.id);
+  if (item) removeUploadedFile(item.photo_url);
+  res.redirect('/admin#testimonials-section');
+});
+
+// ---- Gallery management (homepage photo grid) ----
+const GALLERY_CATEGORIES = ['Education', 'Health', 'Community', 'Water', 'Events', 'General'];
+
+app.post('/admin/gallery', requireAuth, uploadOrBounce(uploadGallery.single('gallery_image'), '#gallery-section'), (req, res) => {
+  const title = (req.body.title || '').trim().slice(0, 120) || 'Enrich Hope Photo';
+  const category = GALLERY_CATEGORIES.includes(req.body.category) ? req.body.category : 'General';
+  let imageUrl = '';
+  if (req.file) {
+    imageUrl = `/uploads/gallery/${req.file.filename}`;
+  } else if (req.body.image_url && req.body.image_url.trim()) {
+    imageUrl = req.body.image_url.trim().slice(0, 300);
+  } else {
+    return res.redirect('/admin#gallery-section');
   }
+  posts.addGalleryItem({ title, image_url: imageUrl, category });
+  res.redirect('/admin#gallery-section');
+});
+
+app.post('/admin/gallery/:id/delete', requireAuth, (req, res) => {
+  const item = posts.listGallery().find((g) => String(g.id) === String(req.params.id));
+  posts.deleteGalleryItem(req.params.id);
+  if (item) removeUploadedFile(item.image_url);
+  res.redirect('/admin#gallery-section');
 });
 
 app.get('/admin/posts/new', requireAuth, (req, res) => {
   res.render('admin-post-form', { post: null, error: null, pageTitle: 'New Post | Admin' });
 });
 
-app.post('/admin/posts', requireAuth, upload.single('cover_image'), (req, res) => {
+app.post('/admin/posts', requireAuth, handleUpload(upload.single('cover_image'), () => 'admin-post-form'), (req, res) => {
   try {
     const { title, subtitle, body_markdown, status } = req.body;
     if (!title || !title.trim() || !body_markdown || !body_markdown.trim()) {
@@ -331,16 +490,18 @@ app.get('/admin/posts/:id/edit', requireAuth, (req, res) => {
   res.render('admin-post-form', { post, error: null, pageTitle: 'Edit Post | Admin' });
 });
 
-app.post('/admin/posts/:id', requireAuth, upload.single('cover_image'), (req, res) => {
+app.post('/admin/posts/:id', requireAuth, handleUpload(upload.single('cover_image'), () => 'admin-post-form'), (req, res) => {
   try {
     const { title, subtitle, body_markdown, status } = req.body;
     if (!title || !title.trim() || !body_markdown || !body_markdown.trim()) {
+      if (req.file) removeUploadedFile(`/uploads/blog/${req.file.filename}`);
       return res.status(400).render('admin-post-form', {
         post: { ...req.body, id: req.params.id },
         error: 'Title and body are required.',
         pageTitle: 'Edit Post | Admin',
       });
     }
+    const before = posts.getById(req.params.id);
     posts.updatePost(req.params.id, {
       title: title.trim(),
       subtitle: (subtitle || '').trim(),
@@ -348,6 +509,7 @@ app.post('/admin/posts/:id', requireAuth, upload.single('cover_image'), (req, re
       cover_image: req.file ? `/uploads/blog/${req.file.filename}` : null,
       status: status === 'published' ? 'published' : 'draft',
     });
+    if (req.file && before) removeUploadedFile(before.cover_image);
     res.redirect(`/admin/posts/${req.params.id}/edit`);
   } catch (err) {
     console.error(err);
@@ -360,8 +522,15 @@ app.post('/admin/posts/:id', requireAuth, upload.single('cover_image'), (req, re
 });
 
 app.post('/admin/posts/:id/delete', requireAuth, (req, res) => {
+  const post = posts.getById(req.params.id);
   posts.deletePost(req.params.id);
+  if (post) removeUploadedFile(post.cover_image);
   res.redirect('/admin');
+});
+
+// Friendly 404 for everything else (must stay after all routes).
+app.use((req, res) => {
+  res.status(404).render('not-found', { pageTitle: 'Page Not Found | Enrich Hope Foundation' });
 });
 
 app.listen(PORT, () => {
