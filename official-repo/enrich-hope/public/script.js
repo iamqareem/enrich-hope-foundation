@@ -15,7 +15,35 @@ siteNav.querySelectorAll('a').forEach(link => {
 });
 
 // Footer year
-document.getElementById('year').textContent = new Date().getFullYear();
+const yearEl = document.getElementById('year');
+if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+// Footer social links: hydrated from /api/social-links (managed in /admin).
+// Icons without a configured URL are hidden; the row hides entirely if none.
+fetch('/api/social-links')
+  .then((r) => (r.ok ? r.json() : {}))
+  .then((links) => {
+    const row = document.getElementById('social-row');
+    if (!row || !links) return;
+    let visible = 0;
+    row.querySelectorAll('a[data-social]').forEach((a) => {
+      const url = (links[a.dataset.social] || '').trim();
+      if (url) {
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.style.display = '';
+        visible += 1;
+      } else {
+        a.style.display = 'none';
+      }
+    });
+    if (!visible) {
+      const col = row.closest('.footer-col');
+      if (col) col.style.display = 'none';
+    }
+  })
+  .catch(() => { /* footer keeps its default links */ });
 
 // Floating donate button: hide while the hero or donate section is already in view
 const floatDonate = document.querySelector('.float-donate');

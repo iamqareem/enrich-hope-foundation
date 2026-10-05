@@ -32,6 +32,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json()); // Pesapal IPN can POST JSON — without this req.body is undefined
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -64,6 +65,24 @@ const upload = multer({
     const ok = /^image\/(jpeg|png|webp)$/.test(file.mimetype);
     cb(ok ? null : new Error('Only JPG, PNG, or WEBP images are allowed'), ok);
   },
+});
+
+// ---- Site settings (footer social links) ----
+// Available in every EJS view as `socialLinks`, so the footer partial can
+// render them with zero changes to each individual route.
+app.use((req, res, next) => {
+  try {
+    res.locals.socialLinks = posts.getSocialLinks();
+  } catch (err) {
+    res.locals.socialLinks = { facebook: '', instagram: '', x: '', youtube: '' };
+  }
+  next();
+});
+
+// Public JSON feed for the static homepage (public/index.html can't use
+// EJS, so a tiny script hydrates its footer icons from here).
+app.get('/api/social-links', (req, res) => {
+  res.json(res.locals.socialLinks);
 });
 
 // =========================================================
@@ -238,7 +257,40 @@ app.post('/admin/logout', (req, res) => {
 });
 
 app.get('/admin', requireAuth, (req, res) => {
-  res.render('admin-dashboard', { posts: posts.listAll(), pageTitle: 'Dashboard | Admin' });
+  res.render('admin-dashboard', {
+    posts: posts.listAll(),
+    socialLinks: posts.getSocialLinks(),
+    settingsSaved: req.query.saved === '1',
+    settingsError: null,
+    pageTitle: 'Dashboard | Admin',
+  });
+});
+
+app.post('/admin/settings/social', requireAuth, (req, res) => {
+  try {
+    const saved = posts.setSocialLinks({
+      facebook: req.body.facebook,
+      instagram: req.body.instagram,
+      x: req.body.x,
+      youtube: req.body.youtube,
+    });
+    res.render('admin-dashboard', {
+      posts: posts.listAll(),
+      socialLinks: saved,
+      settingsSaved: true,
+      settingsError: null,
+      pageTitle: 'Dashboard | Admin',
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).render('admin-dashboard', {
+      posts: posts.listAll(),
+      socialLinks: posts.getSocialLinks(),
+      settingsSaved: false,
+      settingsError: 'Could not save social links. Please try again.',
+      pageTitle: 'Dashboard | Admin',
+    });
+  }
 });
 
 app.get('/admin/posts/new', requireAuth, (req, res) => {

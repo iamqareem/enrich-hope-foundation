@@ -93,6 +93,23 @@ const settingsQueries = {
   `),
 };
 
+// ---- Site settings: footer social links (editable in /admin) ----
+// Stored as individual settings rows so a single link can be updated
+// without touching the others. Empty string = "not set, hide the icon".
+const SOCIAL_KEYS = {
+  facebook: 'social_facebook',
+  instagram: 'social_instagram',
+  x: 'social_x',
+  youtube: 'social_youtube',
+};
+
+function sanitizeSocialUrl(raw) {
+  const url = String(raw ?? '').trim().slice(0, 300);
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url)) return url;
+  return `https://${url}`;
+}
+
 module.exports = {
   db,
   uniqueSlug,
@@ -103,6 +120,27 @@ module.exports = {
 
   getSetting: (key) => settingsQueries.get.get(key)?.value ?? null,
   setSetting: (key, value) => settingsQueries.set.run({ key, value }),
+
+  getSocialLinks: () => ({
+    facebook: settingsQueries.get.get(SOCIAL_KEYS.facebook)?.value ?? '',
+    instagram: settingsQueries.get.get(SOCIAL_KEYS.instagram)?.value ?? '',
+    x: settingsQueries.get.get(SOCIAL_KEYS.x)?.value ?? '',
+    youtube: settingsQueries.get.get(SOCIAL_KEYS.youtube)?.value ?? '',
+  }),
+
+  setSocialLinks: ({ facebook, instagram, x, youtube }) => {
+    const clean = {
+      facebook: sanitizeSocialUrl(facebook),
+      instagram: sanitizeSocialUrl(instagram),
+      x: sanitizeSocialUrl(x),
+      youtube: sanitizeSocialUrl(youtube),
+    };
+    settingsQueries.set.run({ key: SOCIAL_KEYS.facebook, value: clean.facebook });
+    settingsQueries.set.run({ key: SOCIAL_KEYS.instagram, value: clean.instagram });
+    settingsQueries.set.run({ key: SOCIAL_KEYS.x, value: clean.x });
+    settingsQueries.set.run({ key: SOCIAL_KEYS.youtube, value: clean.youtube });
+    return clean;
+  },
 
   createPost({ title, subtitle, body_markdown, cover_image, status }) {
     const slug = uniqueSlug(title);

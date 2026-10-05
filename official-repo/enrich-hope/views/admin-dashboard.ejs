@@ -26,7 +26,46 @@
 </header>
 
 <main class="wrap admin-main">
-  <div class="admin-main-head">
+  <section class="admin-card">
+    <h2>Follow Us — Social Links</h2>
+    <p class="admin-hint">These appear in the site footer. Leave a field empty to hide that icon.</p>
+
+    <% if (typeof settingsSaved !== 'undefined' && settingsSaved) { %>
+      <p class="admin-success">Social links saved.</p>
+    <% } %>
+    <% if (typeof settingsError !== 'undefined' && settingsError) { %>
+      <p class="admin-error"><%= settingsError %></p>
+    <% } %>
+
+    <form method="POST" action="/admin/settings/social" class="admin-form admin-social-form">
+      <label for="social_facebook">Facebook</label>
+      <input type="url" id="social_facebook" name="facebook" inputmode="url"
+             placeholder="https://facebook.com/your-page"
+             value="<%= socialLinks ? socialLinks.facebook : '' %>">
+
+      <label for="social_instagram">Instagram</label>
+      <input type="url" id="social_instagram" name="instagram" inputmode="url"
+             placeholder="https://instagram.com/your-page"
+             value="<%= socialLinks ? socialLinks.instagram : '' %>">
+
+      <label for="social_x">X (Twitter)</label>
+      <input type="url" id="social_x" name="x" inputmode="url"
+             placeholder="https://x.com/your-handle"
+             value="<%= socialLinks ? socialLinks.x : '' %>">
+
+      <label for="social_youtube">YouTube</label>
+      <input type="url" id="social_youtube" name="youtube" inputmode="url"
+             placeholder="https://youtube.com/@your-channel"
+             value="<%= socialLinks ? socialLinks.youtube : '' %>">
+
+      <div class="admin-form-actions">
+        <span></span>
+        <button type="submit" class="btn btn-gold">Save Social Links</button>
+      </div>
+    </form>
+  </section>
+
+  <div class="admin-main-head admin-posts-head">
     <h1>Posts</h1>
     <a href="/admin/posts/new" class="btn btn-gold">+ New Post</a>
   </div>
