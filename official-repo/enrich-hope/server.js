@@ -194,6 +194,11 @@ function markdownExcerpt(md, maxLen = 160) {
 // =========================================================
 // Frontend only ever POSTs here — no Pesapal key ever reaches the browser.
 
+// Single source of truth for the donation currency — the site is USD.
+const DONATION_CURRENCY = 'USD';
+const MIN_AMOUNT = 1;      // USD
+const MAX_AMOUNT = 100000; // USD
+
 app.post('/donate/start', async (req, res) => {
   if (!pesapal.isConfigured()) {
     return res.status(503).render('donate-status', {
@@ -204,9 +209,7 @@ app.post('/donate/start', async (req, res) => {
 
   const amountRaw = req.body.amount === 'custom' ? req.body.custom_amount : req.body.amount;
   const amount = Math.round(Number(amountRaw));
-  const MIN_UGX = 1000;
-  const MAX_UGX = 100000000;
-  if (!Number.isFinite(amount) || amount < MIN_UGX || amount > MAX_UGX) {
+  if (!Number.isFinite(amount) || amount < MIN_AMOUNT || amount > MAX_AMOUNT) {
     return res.status(400).render('donate-status', {
       state: 'invalid_amount',
       pageTitle: 'Donate | Enrich Hope Foundation',
@@ -215,7 +218,7 @@ app.post('/donate/start', async (req, res) => {
 
   const donation = donations.create({
     amount,
-    currency: 'UGX',
+    currency: DONATION_CURRENCY,
     donor_name: (req.body.donor_name || '').trim() || null,
     donor_email: (req.body.donor_email || '').trim() || null,
     donor_phone: (req.body.donor_phone || '').trim() || null,
@@ -225,7 +228,7 @@ app.post('/donate/start', async (req, res) => {
     const order = await pesapal.submitOrder({
       merchantReference: donation.merchant_reference,
       amount,
-      currency: 'UGX',
+      currency: DONATION_CURRENCY,
       description: 'Donation to Enrich Hope Foundation',
       email: donation.donor_email,
       phone: donation.donor_phone,

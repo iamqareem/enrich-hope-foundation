@@ -84,7 +84,7 @@ async function submitOrder({ merchantReference, amount, currency, description, e
     },
     body: JSON.stringify({
       id: merchantReference,
-      currency: currency || 'UGX',
+      currency: currency || 'USD',
       amount,
       description: description || 'Donation to Enrich Hope Foundation',
       callback_url: `${process.env.PUBLIC_BASE_URL}/donate/callback`,

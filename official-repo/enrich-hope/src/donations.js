@@ -13,7 +13,7 @@ db.exec(`
     merchant_reference TEXT NOT NULL UNIQUE,
     order_tracking_id  TEXT,
     amount             REAL NOT NULL,
-    currency           TEXT NOT NULL DEFAULT 'UGX',
+    currency           TEXT NOT NULL DEFAULT 'USD',
     donor_name         TEXT,
     donor_email        TEXT,
     donor_phone        TEXT,
@@ -52,7 +52,7 @@ module.exports = {
     q.insert.run({
       merchant_reference,
       amount,
-      currency: currency || 'UGX',
+      currency: currency || 'USD',
       donor_name: donor_name || null,
       donor_email: donor_email || null,
       donor_phone: donor_phone || null,

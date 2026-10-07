@@ -11,7 +11,7 @@
     <% } else if (state === 'completed') { %>
       <p class="eyebrow center">Thank You</p>
       <h1>Your Gift Was Received</h1>
-      <p>Thank you for supporting Enrich Hope Foundation<% if (amount) { %> — your donation of UGX <%= Number(amount).toLocaleString() %> means a real difference for the families we work with.<% } else { %>. Your gift means a real difference for the families we work with.<% } %></p>
+      <p>Thank you for supporting Enrich Hope Foundation<% if (amount) { %> — your donation of <%= Number(amount).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) %> means a real difference for the families we work with.<% } else { %>. Your gift means a real difference for the families we work with.<% } %></p>
       <a href="/" class="btn btn-gold">Back to Home</a>
 
     <% } else if (state === 'pending') { %>
@@ -29,7 +29,7 @@
     <% } else if (state === 'invalid_amount') { %>
       <p class="eyebrow center">Donate</p>
       <h1>Please Choose an Amount</h1>
-      <p>Pick one of the suggested amounts, or enter your own (minimum UGX 1,000), then try again.</p>
+      <p>Pick one of the suggested amounts, or enter your own (minimum USD 1), then try again.</p>
       <a href="/#donate" class="btn btn-gold">Back to Donate</a>
 
     <% } else { %>
